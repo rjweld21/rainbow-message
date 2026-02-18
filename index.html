@@ -109,14 +109,19 @@
                 // Calculate optimal font size based on text length and screen width
                 function calculateOptimalFontSize() {
                     const screenWidth = window.innerWidth;
-                    const textLength = originalText.length;
                     
-                    // Base font size calculation - be more conservative to allow for wrapping
-                    let baseFontSize = Math.min(screenWidth / (textLength * 0.7), screenWidth * 0.06);
+                    // Make font size much larger to force wrapping on mobile devices
+                    let baseFontSize;
                     
-                    // Ensure minimum and maximum font sizes
-                    baseFontSize = Math.max(baseFontSize, 16); // Minimum 16px
-                    baseFontSize = Math.min(baseFontSize, 60); // Maximum 60px (reduced for better wrapping)
+                    if (screenWidth <= 400) { // iPhone and similar
+                        baseFontSize = 48; // Large enough to wrap on iPhone
+                    } else if (screenWidth <= 768) { // Tablets
+                        baseFontSize = 60;
+                    } else if (screenWidth <= 1200) { // Small desktop
+                        baseFontSize = 72;
+                    } else { // Large desktop
+                        baseFontSize = 80;
+                    }
                     
                     return baseFontSize;
                 }
