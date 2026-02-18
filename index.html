@@ -20,9 +20,13 @@
             font-size: 4rem;
             font-weight: bold;
             text-align: center;
-            white-space: nowrap;
+            line-height: 1.2;
             opacity: 0;
             transition: opacity 0.5s ease-in-out;
+            padding: 1rem;
+            max-width: 95vw;
+            word-break: break-word;
+            hyphens: auto;
         }
         
         .text-container.ready {
@@ -39,7 +43,7 @@
         
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-30px); }
+            50% { transform: translateY(-0.5em); }
         }
         
         @keyframes rainbow {
@@ -52,16 +56,39 @@
             100% { color: #ff0080; } /* Magenta */
         }
         
+        @media (max-width: 1200px) {
+            .text-container {
+                font-size: 3.5rem;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .text-container {
+                font-size: 2.8rem;
+            }
+        }
+        
         @media (max-width: 768px) {
             .text-container {
-                font-size: 2.5rem;
-                padding: 1rem;
+                font-size: 2.2rem;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .text-container {
+                font-size: 1.8rem;
             }
         }
         
         @media (max-width: 480px) {
             .text-container {
-                font-size: 1.8rem;
+                font-size: 1.4rem;
+            }
+        }
+        
+        @media (max-width: 360px) {
+            .text-container {
+                font-size: 1.2rem;
             }
         }
     </style>
@@ -74,9 +101,29 @@
     <script>
         // Wait for DOM to be fully loaded
         document.addEventListener('DOMContentLoaded', function() {
-            // Wrap each character in a span for individual animation
             const textElement = document.getElementById('text');
             const text = textElement.textContent.trim();
+            
+            // Calculate optimal font size based on text length and screen width
+            function calculateOptimalFontSize() {
+                const screenWidth = window.innerWidth;
+                const textLength = text.length;
+                
+                // Base font size calculation
+                let baseFontSize = Math.min(screenWidth / textLength * 2, screenWidth * 0.08);
+                
+                // Ensure minimum and maximum font sizes
+                baseFontSize = Math.max(baseFontSize, 16); // Minimum 16px
+                baseFontSize = Math.min(baseFontSize, 80); // Maximum 80px
+                
+                return baseFontSize;
+            }
+            
+            // Apply the calculated font size
+            const optimalFontSize = calculateOptimalFontSize();
+            textElement.style.fontSize = `${optimalFontSize}px`;
+            
+            // Clear existing content
             textElement.innerHTML = '';
             
             // Process each character
@@ -97,6 +144,12 @@
                 
                 textElement.appendChild(span);
             }
+            
+            // Recalculate font size on window resize
+            window.addEventListener('resize', function() {
+                const newOptimalFontSize = calculateOptimalFontSize();
+                textElement.style.fontSize = `${newOptimalFontSize}px`;
+            });
             
             // Make the text visible after processing
             setTimeout(() => {
