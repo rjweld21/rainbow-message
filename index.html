@@ -25,8 +25,9 @@
             transition: opacity 0.5s ease-in-out;
             padding: 1rem;
             max-width: 95vw;
-            word-break: break-word;
-            hyphens: auto;
+            word-break: keep-all;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
         }
         
         .text-container.ready {
@@ -102,59 +103,92 @@
         // Wait for DOM to be fully loaded
         document.addEventListener('DOMContentLoaded', function() {
             const textElement = document.getElementById('text');
-            const text = textElement.textContent.trim();
+            const originalText = textElement.textContent.trim();
             
-            // Calculate optimal font size based on text length and screen width
-            function calculateOptimalFontSize() {
-                const screenWidth = window.innerWidth;
-                const textLength = text.length;
-                
-                // Base font size calculation
-                let baseFontSize = Math.min(screenWidth / textLength * 2, screenWidth * 0.08);
-                
-                // Ensure minimum and maximum font sizes
-                baseFontSize = Math.max(baseFontSize, 16); // Minimum 16px
-                baseFontSize = Math.min(baseFontSize, 80); // Maximum 80px
-                
-                return baseFontSize;
-            }
-            
-            // Apply the calculated font size
-            const optimalFontSize = calculateOptimalFontSize();
-            textElement.style.fontSize = `${optimalFontSize}px`;
-            
-            // Clear existing content
-            textElement.innerHTML = '';
-            
-            // Process each character
-            for (let i = 0; i < text.length; i++) {
-                const span = document.createElement('span');
-                span.className = 'letter';
-                span.textContent = text[i];
-                
-                // Preserve spaces
-                if (text[i] === ' ') {
-                    span.innerHTML = '&nbsp;';
+            function setupText() {
+                // Calculate optimal font size based on text length and screen width
+                function calculateOptimalFontSize() {
+                    const screenWidth = window.innerWidth;
+                    const textLength = originalText.length;
+                    
+                    // Base font size calculation - be more conservative to allow for wrapping
+                    let baseFontSize = Math.min(screenWidth / (textLength * 0.7), screenWidth * 0.06);
+                    
+                    // Ensure minimum and maximum font sizes
+                    baseFontSize = Math.max(baseFontSize, 16); // Minimum 16px
+                    baseFontSize = Math.min(baseFontSize, 60); // Maximum 60px (reduced for better wrapping)
+                    
+                    return baseFontSize;
                 }
                 
-                // Apply wave animation delays dynamically
-                const bounceDelay = i * 0.05; // 50ms delay between each character
-                const colorDelay = i * 0.05;
-                span.style.animationDelay = `${bounceDelay}s, ${colorDelay}s`;
+                // Apply the calculated font size
+                const optimalFontSize = calculateOptimalFontSize();
+                textElement.style.fontSize = `${optimalFontSize}px`;
                 
-                textElement.appendChild(span);
+                // Clear existing content
+                textElement.innerHTML = '';
+                
+                // Split into words for proper wrapping
+                const words = originalText.split(' ');
+                const allSpans = [];
+                
+                // Create spans for each character in each word
+                words.forEach((word, wordIndex) => {
+                    // Add characters from the word
+                    for (let i = 0; i < word.length; i++) {
+                        const span = document.createElement('span');
+                        span.className = 'letter';
+                        span.textContent = word[i];
+                        textElement.appendChild(span);
+                        allSpans.push(span);
+                    }
+                    
+                    // Add space after word (except for last word)
+                    if (wordIndex < words.length - 1) {
+                        const spaceSpan = document.createElement('span');
+                        spaceSpan.className = 'letter';
+                        spaceSpan.innerHTML = '&nbsp;';
+                        textElement.appendChild(spaceSpan);
+                        allSpans.push(spaceSpan);
+                    }
+                });
+                
+                // Wait for layout to settle, then calculate column positions
+                setTimeout(() => {
+                    // Get the position of each character
+                    const positions = allSpans.map(span => {
+                        const rect = span.getBoundingClientRect();
+                        return {
+                            span: span,
+                            x: rect.left,
+                            y: rect.top
+                        };
+                    });
+                    
+                    // Find unique X positions (columns) and sort them
+                    const uniqueXPositions = [...new Set(positions.map(p => Math.round(p.x)))].sort((a, b) => a - b);
+                    
+                    // Assign column-based delays
+                    positions.forEach(pos => {
+                        const columnIndex = uniqueXPositions.indexOf(Math.round(pos.x));
+                        const bounceDelay = columnIndex * 0.05; // 50ms delay per column
+                        const colorDelay = columnIndex * 0.05;
+                        pos.span.style.animationDelay = `${bounceDelay}s, ${colorDelay}s`;
+                    });
+                    
+                    // Make the text visible after processing
+                    textElement.classList.add('ready');
+                }, 50);
             }
             
-            // Recalculate font size on window resize
-            window.addEventListener('resize', function() {
-                const newOptimalFontSize = calculateOptimalFontSize();
-                textElement.style.fontSize = `${newOptimalFontSize}px`;
-            });
+            // Initial setup
+            setupText();
             
-            // Make the text visible after processing
-            setTimeout(() => {
-                textElement.classList.add('ready');
-            }, 100);
+            // Recalculate on window resize
+            window.addEventListener('resize', function() {
+                textElement.classList.remove('ready');
+                setTimeout(setupText, 100);
+            });
         });
     </script>
 </body>
